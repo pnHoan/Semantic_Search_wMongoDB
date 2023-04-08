@@ -1,14 +1,9 @@
-# Apply chatGPT into Facebook chatbot
+# Semantic serch
+Implement Semantic search with mongoDB
 
-# 
-database = "Chatbot"
-colection:
-  - "shop"
-  - "log"
-  - "templateReq"
+## Usage:
+1. create ```APIkey.txt``` and put your openai APIkey inside it
+2. ```python -u main.py```
 
-```
-client = pymongo.MongoClient("mongodb://127.0.0.1:27017/")
-db = client["Chatbot"]
-collection = db["log"]
-```
+## NOTE:
+- function ```embeddingData(field:str)``` should only be run once if no change is made to the server (inorder to save openai API's tokens)

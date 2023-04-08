@@ -1,9 +1,9 @@
 import pymongo
 import pandas as pd
-import numpy as np
 import openai
 import APIkey
 from openai.embeddings_utils import get_embedding
+from openai.embeddings_utils import cosine_similarity
 
 openai.api_key = APIkey.get_key()
 
@@ -27,38 +27,54 @@ class Server:
         '''Add embeded value of req'''
         df = pd.DataFrame(list(self.collection.find()))
         df['embedding'] = df[field].apply(lambda x: get_embedding(x , engine='text-embedding-ada-002'))
+        
+        for doc in self.collection.find():
+            embedding = df.loc[df['id'] == doc['id'], 'embedding'].values[0]
+            
+            self.collection.update_one({'_id': doc['_id']}, {'$set': {'embedding': embedding}})
+
 
         # tmp
-        df.to_csv("tmp.csv")
-        
-        # Here
-        for _,row in df.iterrows():
-            # self.db.collection.update_one({'id': row.get('id')}, {'$set': row['embedding'].to_dict()}, upsert=False)
-            self.db.collection.update_one({'id': row.get('id')}, {'$set': row.get('embedding')}, upsert=False)
-
+        # df.to_csv("tmp.csv")
+        # for _,row in df.iterrows():
+        #     print(type(row.get('embedding')))
+    
+    def dropCollection(self, dbName=None,collectionName=None):
+        if dbName is None or collectionName is None:
+            dbName = self.db.name
+            collectionName = self.collection.name
             
-            
-        #TODO: add new fielf to mongodb Server
-        
-
-    def dropCollection(self):
-        if self.db in self.client.list_database_names():
-            db = self.client[self.db]
-            if self.collection in db.list_collection_names():
-                db[self.collection].drop()
-                print(f"Collection {self.collection} dropped successfully from {self.db} database.")
+        if dbName in self.client.list_database_names():
+            db = self.client[dbName]
+            if collectionName in db.list_collection_names():
+                db[collectionName].drop()
+                print(f"Collection {collectionName} dropped successfully from {dbName} database.")
             else:
-                print(f"Collection {self.collection} does not exist in {self.db} database.")
+                print(f"Collection {collectionName} does not exist in {dbName} database.")
         else:
-            print(f"Database {self.db} does not exist.")
+            print(f"Database {dbName} does not exist.")
             
-    def dropCollection(self, dbName,collectionName):
-        if self.db in self.client.list_database_names():
-            db = self.client[self.db]
-            if self.collection in db.list_collection_names():
-                db[self.collection].drop()
-                print(f"Collection {self.collection} dropped successfully from {self.db} database.")
-            else:
-                print(f"Collection {self.collection} does not exist in {self.db} database.")
+    def semanticSearch(self,text = None):
+        if text is None:
+            return 
         else:
-            print(f"Database {self.db} does not exist.")
+            text_vec = get_embedding(text, engine="text-embedding-ada-002")
+            
+            df = pd.DataFrame(list(self.collection.find()))
+            
+            # Transform data from string to numpy array in order to calculate 
+            # df['embedding'] = df['embedding'].apply(eval).apply(np.array)
+
+            df["similarities"] = df['embedding'].apply(lambda x: cosine_similarity(x, text_vec))
+
+            if 1: 
+                print("======================================================================")
+                print(df[["type","similarities"]].sort_values("similarities", ascending=False))
+                print("======================================================================")
+
+    def checkExist(self):
+        if self.db.name in self.client.list_database_names():
+            if self.collection.name in self.db.list_collection_names():
+                return True
+        return False
+
