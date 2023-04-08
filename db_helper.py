@@ -34,20 +34,31 @@ class Server:
         # Here
         for _,row in df.iterrows():
             # self.db.collection.update_one({'id': row.get('id')}, {'$set': row['embedding'].to_dict()}, upsert=False)
-            self.db.collection.update_one({'id': row.get('id')}, {'$set': row.get('embedding').to_dict()}, upsert=False)
+            self.db.collection.update_one({'id': row.get('id')}, {'$set': row.get('embedding')}, upsert=False)
 
             
             
         #TODO: add new fielf to mongodb Server
         
 
-    def dropCollection(self, dbName,collectionName):
-        if dbName in self.client.list_database_names():
-            db = self.client[dbName]
-            if collectionName in db.list_collection_names():
-                db[collectionName].drop()
-                print(f"Collection {collectionName} dropped successfully from {dbName} database.")
+    def dropCollection(self):
+        if self.db in self.client.list_database_names():
+            db = self.client[self.db]
+            if self.collection in db.list_collection_names():
+                db[self.collection].drop()
+                print(f"Collection {self.collection} dropped successfully from {self.db} database.")
             else:
-                print(f"Collection {collectionName} does not exist in {dbName} database.")
+                print(f"Collection {self.collection} does not exist in {self.db} database.")
         else:
-            print(f"Database {dbName} does not exist.")
+            print(f"Database {self.db} does not exist.")
+            
+    def dropCollection(self, dbName,collectionName):
+        if self.db in self.client.list_database_names():
+            db = self.client[self.db]
+            if self.collection in db.list_collection_names():
+                db[self.collection].drop()
+                print(f"Collection {self.collection} dropped successfully from {self.db} database.")
+            else:
+                print(f"Collection {self.collection} does not exist in {self.db} database.")
+        else:
+            print(f"Database {self.db} does not exist.")
